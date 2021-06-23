@@ -45,7 +45,7 @@ def slerbify(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Slerbify(slow + reverb) mp3 files using slowedreverb.com')
     parser.add_argument('mp3_file', metavar='filename', help='Any mp3 file to be slerbified')
-    parser.add_argument('-s', dest='slow', type=int, choices=range(75, 100), default=87, help='The slowness speed. (default: %(default)s)')
-    parser.add_argument('-r', dest='reverb', type=int, choices=range(0, 100), default = 80, help='The reverb value. (default: %(default)s)')
+    parser.add_argument('-s', dest='slow', type=int, choices=range(75, 101), default=87, help='The slowness speed. (default: %(default)s)')
+    parser.add_argument('-r', dest='reverb', type=int, choices=range(0, 101), default = 80, help='The reverb value. (default: %(default)s)')
     args = parser.parse_args()
     slerbify(args)
