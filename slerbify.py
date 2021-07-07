@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 import time, math, random, string
 import requests
-from requests_toolbelt import MultipartEncoder
 import argparse
 
 HOSTNAME = 'https://slowedreverb.com'
@@ -20,34 +19,48 @@ def check_status(uid):
 def send_file(f, fields):
     mp3_file = {'file': (f, open(f, 'rb'), 'audio/mpeg')}
 
+    print(f'Sending {f} to server')
     with requests.post(f"{HOSTNAME}/fileSR", data=fields, files=mp3_file) as res:
         if res.ok:
+            print(f'Finished processing {f}')
             return res.json()['finishedLink']
         print(res.content)
         print("Something went wrong!")
 
 
 # TODO: make this concurrent
-def slerbify(args):
+def slerbify(file, slow, reverb):
     fields = {
             'uid': get_uid(),
-            'speed': args.slow,
-            'reverb': args.reverb
+            'speed': slow,
+            'reverb': reverb
             }
 
-    f = send_file(args.mp3_file, fields)
+    f = send_file(file, fields)
 
     with requests.get(HOSTNAME+f) as res:
-        outfilename = f'{args.mp3_file[:-4]}-slerbified.mp3'
+        outfilename = f'{file[:-4]}-slerbified.mp3'
         with open(outfilename, 'wb') as outf:
             outf.write(res.content)
         print('Saved slerbified file as', outfilename)
 
 
+def process_batch(b):
+    # We sleep b/w requests to prevent rate limit restrictions
+    files = b.files
+    for s in files:
+        slerbify(s, b.slow, b.reverb)
+        if args.sleep:
+            print(f'Sleeping for {args.sleep} second(s)')
+            time.sleep(args.sleep)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Slerbify(slow + reverb) mp3 files using slowedreverb.com')
-    parser.add_argument('mp3_file', metavar='filename', help='Any mp3 file to be slerbified')
-    parser.add_argument('-s', dest='slow', type=int, choices=range(75, 101), default=87, help='The slowness speed. (default: %(default)s)')
-    parser.add_argument('-r', dest='reverb', type=int, choices=range(0, 101), default=80, help='The reverb value. (default: %(default)s)')
+    parser.add_argument('-s', dest='slow', type=int, choices=range(75, 101), metavar='[75-100]', default=87, help='The slowness speed. (default: %(default)s)')
+    parser.add_argument('-r', dest='reverb', type=int, choices=range(0, 101), metavar='[0-100]', default=80, help='The reverb value. (default: %(default)s)')
+    parser.add_argument('-d', '--delay', dest='sleep', type=int, default=2, help=argparse.SUPPRESS)
+    parser.add_argument(dest='files', metavar='mp3_file', nargs='+', help='Any mp3 file(s) to be slerbified')
     args = parser.parse_args()
+    process_batch(args)
+    exit(0)
     slerbify(args)

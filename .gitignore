@@ -1,2 +1,4 @@
 *.webm
 *.wav
+.venv
+
